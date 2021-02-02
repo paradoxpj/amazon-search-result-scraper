@@ -1,5 +1,4 @@
 import requests
-import logging
 
 from bs4 import BeautifulSoup
 from openpyxl import Workbook
@@ -33,7 +32,7 @@ def search(soup):
         rating_count = item.find('span', attrs={'class': 'a-size-base'})
         price_symbol = item.find('span', attrs={'class': 'a-price-symbol'})
         price = item.find('span', attrs={'class': 'a-price-whole'})
-        if (name is None) or (rating is None) or (rating_count is None) or (price_symbol is None) or (price is None):
+        if None in (name, rating, rating_count, price_symbol, price):
             # Condition to check if any field is None.
             # If any of the field is none, then the item is not a search result as Amazon uses same classes for other elements as well.
             continue
