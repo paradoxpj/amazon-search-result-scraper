@@ -1,7 +1,12 @@
 import requests
+import os
 
+import mysql.connector
+
+from datetime import datetime
 from bs4 import BeautifulSoup
 from openpyxl import Workbook
+from dotenv import load_dotenv
 
 from constants import URL
 
@@ -20,6 +25,8 @@ def scrape():
     items = search(soup)
     # Calling the function to extract items into an xls sheet
     extract_in_xls(items)
+    # Calling the function to extract items into database
+    # extract_in_db(items)
 
 def search(soup):
     '''Function to get list of items on search results page on Amazon'''
@@ -62,6 +69,51 @@ def extract_in_xls(items):
         ws.append(item)
     # Saving the worksheet into a local xls sheet
     wb.save("result.xlsx")
+
+def extract_in_db(items):
+    # Loading environment variables from .env file
+    load_dotenv()
+    # Connecting to the database using credentials retreived from .env file
+    mydb = mysql.connector.connect(
+      host = os.environ.get("mysql_host"),
+      user = os.environ.get("mysql_user"),
+      password = os.environ.get("mysql_password"),
+      database = os.environ.get("mysql_database"),
+    )
+    mycursor = mydb.cursor()
+    # Iterating through all the scraped items
+    for item in items:
+        sql_fetch_item = "Select id from items where name=%s"
+        val_fetch_item = (item[0], )
+        # Command to get the item's id from the items table if it already exists in it.
+        mycursor.execute(sql_fetch_item, val_fetch_item)
+        item_curr = mycursor.fetchall()
+        if not item_curr:
+            # Condition to check if the item doesn't already exist in the table
+            sql_insert_item = "Insert into items (name) values (%s)"
+            val_insert_item = (item[0], )
+            # Command to insert the item into the table
+            mycursor.execute(sql_insert_item, val_insert_item)
+            # Command to fetch the id of inserted item from the table
+            mycursor.execute(sql_fetch_item, val_fetch_item)
+            item_curr = mycursor.fetchall()
+        item_id = item_curr[0][0]
+        # Retreiving current date-time and formatting it according to MySQL
+        now = datetime.now()
+        formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
+        sql_insert_price = "Insert into prices (price, itemid, record_date) values (%s, %s, %s)"
+        val_insert_price = (item[4], item_id, formatted_date)
+        # Inserting the price of the item into the price table
+        mycursor.execute(sql_insert_price, val_insert_price)
+    mydb.commit()
+
+def print_result(items):
+    counter=1
+    for item in items:
+        print(counter)
+        for detail in item:
+            print(detail)
+        counter+=1
 
 if __name__ == '__main__':
     '''main function'''

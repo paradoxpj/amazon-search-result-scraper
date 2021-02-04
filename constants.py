@@ -1,2 +1,2 @@
 # URL of the search results webpage
-URL = ""
+URL = "https://www.amazon.in/s?k=mobile&ref=nb_sb_noss_2"
